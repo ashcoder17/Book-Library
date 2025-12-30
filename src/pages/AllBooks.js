@@ -1,7 +1,7 @@
-// src/pages/AllBooks.js
-import BookCard from '../components/Books/BookCard';
-import withLoading from '../components/HOC/withLoading';
+import BookCard from '../components/BookCard';
+import withLoading from '../HOC/withLoading';
 import useFetchBooks from '../hooks/useFetchBooks';
+import PageWrapper from "../components/PageWrapper";
 
 const BookList = ({ books }) => (
   <div style={{ display: 'flex', flexWrap: 'wrap' }}>
@@ -13,14 +13,14 @@ const BookList = ({ books }) => (
 const BookListWithLoading = withLoading(BookList);
 
 const AllBooks = () => {
-  const { data, loading } = useFetchBooks('/books.json'); // Fetching from public/books.json
+  const { data, loading } = useFetchBooks('/books.json');
 
   return (
-    <div>
+    <PageWrapper>
       <h2>Library Catalog</h2>
       <BookListWithLoading isLoading={loading} books={data} />
-    </div>
+    </PageWrapper>
   );
 };
 
-export default AllBooks;
+export default withLoading(AllBooks);

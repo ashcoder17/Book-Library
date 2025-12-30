@@ -1,4 +1,3 @@
-// src/hooks/useFetchBooks.js
 import { useState, useEffect } from 'react';
 
 const useFetchBooks = (url) => {

@@ -1,7 +1,10 @@
+import PageWrapper from "../components/PageWrapper";
+
 const About = () => (
-  <div style={{ padding: '20px' }}>
-    <h2>About This Project</h2>
-    <p>This is a Book Management System built with React, Hooks, and Styled Components.</p>
-  </div>
+  <PageWrapper>
+    <h2>About</h2>
+    <p>This Library Management System is built as a React project.</p>
+  </PageWrapper>
 );
+
 export default About;
