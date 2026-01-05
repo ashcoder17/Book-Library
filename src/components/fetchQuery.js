@@ -13,7 +13,8 @@ const bookFormat = (book) => {
         categories: book.volumeInfo.categories ? book.volumeInfo.categories.join(', ') : 'Uncategorized',
         pageCount: book.volumeInfo.pageCount || 'Unknown Page Count',
         language: book.volumeInfo.language ? book.volumeInfo.language.toUpperCase() : 'Unknown Language',
-        thumbnail: book.volumeInfo.imageLinks?.thumbnail || ''
+        thumbnail: book.volumeInfo.imageLinks?.thumbnail || '',
+        progress: 0
   };
 }
 

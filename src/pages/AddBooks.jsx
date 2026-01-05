@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 import PageWrapper from "../components/PageWrapper";
 import fetchQuery from "../components/fetchQuery";
+import BookCard from "../components/BookCard";
 
 
 const DropDownContent = styled.div`
@@ -78,8 +79,7 @@ const AddBook = () => {
       <div style={{display: 'flex', flexWrap: 'wrap', marginTop: '20px'}}>
         {books.length > 0 && books.map(book => (
           <div key={book.isbn} style={{border: '1px solid #ccc', margin: '10px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '150px'}}>
-            <h3>{book.title}</h3>
-            <img src={book.thumbnail} alt={book.title} />
+            <BookCard {...book} />
             <button onClick={() => addtoLib(book)}>Add to Library</button>
 
           </div>

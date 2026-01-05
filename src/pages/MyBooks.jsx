@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import PageWrapper from "../components/PageWrapper";
+import BookCard from '../components/BookCard';
 
 
 const MyBooks = () => {
@@ -27,8 +28,7 @@ const MyBooks = () => {
                 ) : 
                 (Object.values(JSON.parse(localStorage.getItem("books"))).map(book => (
                     <div key={book.isbn} style={{ border: '1px solid #ccc', margin: '10px', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '150px' }}>
-                        <h3>{book.title}</h3>
-                        <img src={book.thumbnail} alt={book.title} />
+                        <BookCard {...book} />
                         <button onClick={() => removeLib(book.isbn)}>Remove</button>
                     </div>
                     ))
