@@ -5,6 +5,7 @@ import AllBooks from "./pages/AllBooks";
 import AddBook from "./pages/AddBooks";
 import BookDetails from "./pages/BookDetails";
 import About from "./pages/About";
+import MyBooks from "./pages/MyBooks";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/book/:id" element={<BookDetails />} />
         <Route path="/add" element={<AddBook isLoading={false} />} />
         <Route path="/about" element={<About />} />
+        <Route path="/mybooks" element={<MyBooks />} />
       </Routes>
     </BrowserRouter>
   );
