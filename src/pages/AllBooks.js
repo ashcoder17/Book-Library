@@ -1,6 +1,6 @@
 import BookCard from '../components/BookCard';
 import withLoading from '../HOC/withLoading';
-import useFetchBooks from '../hooks/useFetchBooks';
+import fetchQuery from '../hooks/fetchQuery';
 import PageWrapper from "../components/PageWrapper";
 
 const BookList = ({ books }) => (
@@ -14,12 +14,11 @@ const BookList = ({ books }) => (
 const BookListWithLoading = withLoading(BookList);
 
 const AllBooks = () => {
-  const { data, loading } = useFetchBooks('https://www.googleapis.com/books/v1/volumes?q=harry+potter');
+  const { data, loading } = fetchQuery('https://www.googleapis.com/books/v1/volumes?q=harry+potter');
 
   return (
     <PageWrapper>
-      <h2>Library Catalog</h2>
-      <BookListWithLoading isLoading={loading} books={data.items} />
+      <h2>Library Catalog</h2>    
     </PageWrapper>
   );
 };
