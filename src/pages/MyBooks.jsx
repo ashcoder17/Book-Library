@@ -58,7 +58,7 @@ const MyBooks = () => {
                     bookList
                         .slice((page - 1) * 15, page * 15)
                         .map((book) => (
-                            <Mosaic key={book.isbn} {...book}>
+                            <Mosaic key={book.title} {...book}>
                                 <div
                                     style={{
                                         border: '2px solid #ccc',
@@ -71,7 +71,7 @@ const MyBooks = () => {
                                     }}
                                 >
                                     <BookCard {...book} />
-                                    <CardButton variant="remove" onClick={() => removeLib(book.isbn)}>
+                                    <CardButton variant="remove" onClick={() => removeLib(book.title)}>
                                         Remove
                                     </CardButton>
                                 </div>
