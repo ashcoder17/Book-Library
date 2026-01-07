@@ -117,8 +117,6 @@ const AddBook = () => {
   const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
 
-  let myBooks = {};
-
   const handleSearch = async () => {
     setBooks([]);
     const result = await fetchQuery(null, criteria, inputValue, sort);
@@ -126,15 +124,15 @@ const AddBook = () => {
   };
 
   const addtoLib = (book) => {
-    if (addedBooks[book.isbn]) return;
+    if (addedBooks[book.title]) return;
 
     setAddedBooks((prevState) => ({
       ...prevState,
-      [book.isbn]: true,
+      [book.title]: true,
     }));
 
-    myBooks = JSON.parse(localStorage.getItem("books")) || {};
-    myBooks[book.isbn] = book;
+    let myBooks = JSON.parse(localStorage.getItem("books")) || {};
+    myBooks[book.title] = book;
     localStorage.setItem("books", JSON.stringify(myBooks));
   };
 
@@ -225,7 +223,7 @@ const AddBook = () => {
                 >
                   <BookCard {...book} />
                   <CardButton variant="add" onClick={() => addtoLib(book)}>
-                    {addedBooks[book.isbn] ? "Added! Enjoy Reading!" : "Add to Library"}
+                    {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
                   </CardButton>
                 </div>
               </Mosaic>

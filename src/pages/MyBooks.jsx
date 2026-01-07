@@ -12,9 +12,9 @@ const MyBooks = () => {
         setBooks(storedBooks);
     }, []);
 
-    const removeLib = (isbn) => {
+    const removeLib = (title) => {
         const updatedBooks = { ...books };
-        delete updatedBooks[isbn];
+        delete updatedBooks[title];
         setBooks(updatedBooks);
         localStorage.setItem("books", JSON.stringify(updatedBooks));
     };
@@ -52,7 +52,7 @@ const MyBooks = () => {
                             >
                                 <BookCard {...book} />
 
-                                <CardButton variant="remove" onClick={() => removeLib(book.isbn)}>
+                                <CardButton variant="remove" onClick={() => removeLib(book.title)}>
                                     Remove
                                 </CardButton>
                             </div>
