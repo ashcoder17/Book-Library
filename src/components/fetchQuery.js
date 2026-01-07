@@ -1,29 +1,28 @@
 import axios from 'axios'
 
-const apiKey = "AIzaSyB3DESYJ2L-dUafM9YJG8yzVa1pZ-3ETZE"
 
 const bookFormat = (book) => {
     return {
-        isbn: book.volumeInfo.industryIdentifiers[0].identifier,
-        title: book.volumeInfo.title,
-        author: book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author',
-        publisher: book.volumeInfo.publisher || 'Unknown Publisher',
-        publishDate: book.volumeInfo.publishedDate || 'Unknown Date',
-        description: book.volumeInfo.description || 'No Description Available',
-        categories: book.volumeInfo.categories ? book.volumeInfo.categories.join(', ') : 'Uncategorized',
-        pageCount: book.volumeInfo.pageCount || 'Unknown Page Count',
-        language: book.volumeInfo.language ? book.volumeInfo.language.toUpperCase() : 'Unknown Language',
-        thumbnail: book.volumeInfo.imageLinks?.thumbnail || '',
+        //isbn: book.volumeInfo.industryIdentifiers[0].identifier,
+        title: book.title,
+        author: book.author_name ? book.author_name.join(', ') : 'Unknown Author',
+        //publisher: book.volumeInfo.publisher || 'Unknown Publisher',
+        publishDate: book.first_publish_year || 'Unknown Date',
+        //description: book.volumeInfo.description || 'No Description Available',
+        //categories: book.volumeInfo.categories ? book.volumeInfo.categories.join(', ') : 'Uncategorized',
+        //pageCount: book.volumeInfo.pageCount || 'Unknown Page Count',
+        //language: book.volumeInfo.language ? book.volumeInfo.language.toUpperCase() : 'Unknown Language',
+        thumbnail: `https://covers.openlibrary.org/b/${(book.lending_edition_s || book.cover_edition_key) ? `olid/${book.lending_edition_s || book.cover_edition_key}` : `id/${book.cover_id}`}-L.jpg`,
         progress: 0
   };
 }
 
 const fetchQuery = async (type, crit, search, sort) => {
-  let url = `https://www.googleapis.com/books/v1/volumes?q=${search}&orderBy=${sort}&key=${apiKey}&maxResults=40`
+  let url = `https://openlibrary.org/search.json?q=${search}`
   if (crit === "Author")
-    url = `https://www.googleapis.com/books/v1/volumes?q=inauthor:${search}&orderBy=${sort}&key=${apiKey}&maxResults=40`
+    url = `https://openlibrary.org/search/authors.json?q=${search}`
   if (crit === "ISBN")
-    url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${search}&orderBy=${sort}&key=${apiKey}&maxResults=40`
+    url = `http://openlibrary.org/api/volumes/brief/isbn/${search}.json`
 
 
 
@@ -31,7 +30,7 @@ const fetchQuery = async (type, crit, search, sort) => {
   console.log("Fetching from URL:", url);
   try {
     const response = await axios.get(url)
-    books = response.data.items.map(book => bookFormat(book));
+    books = response.data.docs.map(book => bookFormat(book));
     console.log("books", books); //// Debugging line
     
     return books
