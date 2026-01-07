@@ -18,12 +18,18 @@ const bookFormat = (book) => {
 }
 
 const fetchQuery = async (type, crit, search, sort) => {
-  let url = `https://openlibrary.org/search.json?q=${search}&limit=30`
+  let limit = 70;
+  if (sort === "Newest")  
+    sort = 'new'
+  else if (sort === "Rating")
+    sort = 'rating'
+  else
+    sort = ''
+  let url = `https://openlibrary.org/search.json?q=${search}&limit=${limit}&sort=${sort}`
   if (crit === "Author")
-    url = `https://openlibrary.org/search.json?limit=40&author=${search}`
+    url = `https://openlibrary.org/search.json?author=${search}&sort=${sort}&limit=${limit}`
   if (crit === "ISBN")
-    url = `http://openlibrary.org/api/volumes/brief/isbn/${search}.json`
-
+    url = `http://openlibrary.org/api/volumes/brief/isbn/${search}.json?limit=${limit}&sort=${sort}`
 
 
   let books = []
