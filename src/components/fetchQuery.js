@@ -18,9 +18,9 @@ const bookFormat = (book) => {
 }
 
 const fetchQuery = async (type, crit, search, sort) => {
-  let url = `https://openlibrary.org/search.json?q=${search}`
+  let url = `https://openlibrary.org/search.json?q=${search}&limit=30`
   if (crit === "Author")
-    url = `https://openlibrary.org/search/authors.json?q=${search}`
+    url = `https://openlibrary.org/search.json?limit=40&author=${search}`
   if (crit === "ISBN")
     url = `http://openlibrary.org/api/volumes/brief/isbn/${search}.json`
 
