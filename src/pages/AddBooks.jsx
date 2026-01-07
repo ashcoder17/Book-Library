@@ -50,7 +50,7 @@ const DropDownContent = styled.div`
   border: 1px solid #ccc;
   border-radius: 5px;
   width: 180px;
-  z-index: 1;
+  z-index: 3;
   display: ${(props) => (props.open ? "block" : "none")};
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 `;
