@@ -208,7 +208,7 @@ const AddBook = () => {
 
         <GridWrapper>
           {books.length > 0 &&
-            books.slice((page-1)*15,page*15).map((book) => (
+            books.slice((page - 1) * 15, page * 15).map((book) => (
               <Mosaic key={book.isbn} {...book}>
                 <div
                   style={{
@@ -229,26 +229,41 @@ const AddBook = () => {
               </Mosaic>
             ))}
         </GridWrapper>
-          {books.length > 0 && totalPages > 1 && 
-          (<div style={{left: 50}}>
-          {page > 1 && (<Button onClick={() => setPage(page - 1)} disabled={page <= 1}>
-            {"<"}
-          </Button>)}
-          {totalPages > 1 && Array.from({ length: totalPages }, (_, index) => (
-            <Button
-              key={index}
-              onClick={() => setPage(index + 1)}
-              style={{
-                margin: "5px",
-              }}
-            >
-              {index + 1}
-            </Button>
-          ))}
-          {page < totalPages && (<Button onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
-           {">"}
-          </Button>)}
-        </div>)}
+        {books.length > 0 && totalPages > 1 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "20px",
+            }}
+          >
+            <div>
+              {page > 1 && (
+                <Button onClick={() => setPage(page - 1)} disabled={page <= 1}>
+                  {"<"}
+                </Button>
+              )}
+
+              {totalPages > 1 &&
+                Array.from({ length: totalPages }, (_, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => setPage(index + 1)}
+                    style={{ margin: "5px" }}
+                  >
+                    {index + 1}
+                  </Button>
+                ))}
+
+              {page < totalPages && (
+                <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
+                  {">"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
       </Container>
 
     </PageWrapper>
