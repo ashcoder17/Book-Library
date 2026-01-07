@@ -114,7 +114,7 @@ const AddBook = () => {
   const [books, setBooks] = useState([]);
   const [searchDropDownOpen, setSearchDropDownOpen] = useState(false);
   const [sortDropDownOpen, setSortDropDownOpen] = useState(false);
-
+  const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
 
   let myBooks = {};
@@ -156,6 +156,9 @@ const AddBook = () => {
     setSortDropDownOpen(false);
   };
 
+  let totalSize = books.length;
+  let totalPages = Math.ceil(totalSize / 15);
+
   return (
     <PageWrapper>
       <Container>
@@ -189,6 +192,9 @@ const AddBook = () => {
               <DropDownItem onClick={() => handleSortDropDownItemClick("Newest")}>
                 Newest
               </DropDownItem>
+              <DropDownItem onClick={() => handleSortDropDownItemClick("Rating")}>
+                Rating
+              </DropDownItem>
             </DropDownContent>
           </DropDownWrapper>
 
@@ -204,7 +210,7 @@ const AddBook = () => {
 
         <GridWrapper>
           {books.length > 0 &&
-            books.map((book) => (
+            books.slice((page-1)*15,page*15).map((book) => (
               <Mosaic key={book.isbn} {...book}>
                 <div
                   style={{
@@ -225,7 +231,28 @@ const AddBook = () => {
               </Mosaic>
             ))}
         </GridWrapper>
+          {books.length > 0 && totalPages > 1 && 
+          (<div style={{left: 50}}>
+          {page > 1 && (<Button onClick={() => setPage(page - 1)} disabled={page <= 1}>
+            {"<"}
+          </Button>)}
+          {totalPages > 1 && Array.from({ length: totalPages }, (_, index) => (
+            <Button
+              key={index}
+              onClick={() => setPage(index + 1)}
+              style={{
+                margin: "5px",
+              }}
+            >
+              {index + 1}
+            </Button>
+          ))}
+          {page < totalPages && (<Button onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
+           {">"}
+          </Button>)}
+        </div>)}
       </Container>
+
     </PageWrapper>
   );
 };
