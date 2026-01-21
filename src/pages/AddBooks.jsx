@@ -1,110 +1,157 @@
 import React, { useState } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 import fetchQuery from "../components/fetchQuery";
 import PageWrapper from "../components/PageWrapper";
 import BookCard from "../components/BookCard";
-import Mosaic from "../components/Mosaic";
 import CardButton from "../components/CardButton";
+import BookGrid from "../components/BookGrid";
+
+import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
+import withImageLoading from "../components/hoc/withImageLoading";
+
+const shine = keyframes`
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+`;
 
 const Container = styled.div`
-  margin: 20px;
-  font-family: Arial, sans-serif;
+  margin: 40px auto;
+  max-width: 1400px;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 `;
 
 const Heading = styled.h2`
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #ff416c, #ff4b2b, #ffe259);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: ${shine} 3s linear infinite;
+  text-align: center;
+`;
+
+const SearchWrapper = styled.form`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  justify-content: center;
   margin-bottom: 20px;
 `;
 
 const DropDownWrapper = styled.div`
   position: relative;
-  display: inline-block;
-  margin-right: 20px;
 `;
 
 const DropDownButton = styled.button`
-  padding: 10px 15px;
-  background-color: #7f8c8d; 
+  padding: 10px 18px;
+  background: #1f1f1f;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
   font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 
   &:hover {
-    background-color: #95a5a6;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
   }
 `;
 
 const DropDownContent = styled.div`
   position: absolute;
-  top: 35px;
+  top: 45px;
   left: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  background: #1f1f1f;
+  color: #fff;
+  border-radius: 10px;
   width: 180px;
-  z-index: 3;
+  z-index: 10;
   display: ${(props) => (props.open ? "block" : "none")};
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
 `;
 
 const DropDownItem = styled.div`
-  padding: 8px;
+  padding: 10px 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
 
   &:hover {
-    background-color: #f4f4f4;
+    background-color: #ff416c;
+    color: #fff;
   }
 `;
 
 const Input = styled.input`
-  padding: 8px 12px;
+  padding: 12px 16px;
   font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 200px;
-  margin-right: 10px;
+  border: none;
+  border-radius: 12px;
+  width: 220px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   }
 `;
 
 const Button = styled.button`
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: white;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 16px;
-  margin-left: 10px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(255, 65, 108, 0.5);
+  transition: all 0.3s ease;
 
   &:hover {
-    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(255, 65, 108, 0.6);
   }
 `;
 
-const SearchWrapper = styled.div`
+const ButtonWrapper = styled.div`
+  margin-top: 8px;
   display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+  justify-content: center;
 `;
 
-const GridWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: minmax(320px, auto);
-  gap: 20px;
+const PagePagination = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 10px;
   margin-top: 20px;
+`;
+
+const PaginationButton = styled(Button)`
+  padding: 8px 14px;
+  border-radius: 50%;
+  font-weight: bold;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+  }
 `;
 
 const AddBook = () => {
@@ -116,21 +163,25 @@ const AddBook = () => {
   const [sortDropDownOpen, setSortDropDownOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = async () => {
+  const pageSize = 21;
+  const totalPages = Math.ceil(books.length / pageSize);
+
+  const handleSearch = async (e) => {
+    e?.preventDefault();
+    if (!inputValue.trim()) return;
     setBooks([]);
+    setLoading(true);
     const result = await fetchQuery(null, criteria, inputValue, sort);
     setBooks(result || []);
+    setPage(1);
+    setLoading(false);
   };
 
   const addtoLib = (book) => {
     if (addedBooks[book.title]) return;
-
-    setAddedBooks((prevState) => ({
-      ...prevState,
-      [book.title]: true,
-    }));
-
+    setAddedBooks((prev) => ({ ...prev, [book.title]: true }));
     let myBooks = JSON.parse(localStorage.getItem("books")) || {};
     myBooks[book.title] = book;
     localStorage.setItem("books", JSON.stringify(myBooks));
@@ -144,7 +195,6 @@ const AddBook = () => {
     setSortDropDownOpen(!sortDropDownOpen);
     setSearchDropDownOpen(false);
   };
-
   const handleSearchDropDownItemClick = (newCriteria) => {
     setCriteria(newCriteria);
     setSearchDropDownOpen(false);
@@ -154,45 +204,44 @@ const AddBook = () => {
     setSortDropDownOpen(false);
   };
 
-  let totalSize = books.length;
-  let totalPages = Math.ceil(totalSize / 15);
+  const BookCardWithImageLoading = (props) => {
+    const ImageWithLoading = withImageLoading(({ src, alt }) => (
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
+    ));
+    return <BookCard {...props} ImageComponent={ImageWithLoading} />;
+  };
+
+  const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
   return (
     <PageWrapper>
       <Container>
-        <Heading>Find Your Books</Heading>
-        <SearchWrapper>
+        <Heading>Discover Your Next Favorite Book</Heading>
+
+        <SearchWrapper onSubmit={handleSearch}>
           <DropDownWrapper>
-            <DropDownButton onClick={toggleSearchDropDown}>
+            <DropDownButton type="button" onClick={toggleSearchDropDown}>
               Search By: {criteria}
             </DropDownButton>
             <DropDownContent open={searchDropDownOpen}>
-              <DropDownItem onClick={() => handleSearchDropDownItemClick("Title")}>
-                Title
-              </DropDownItem>
-              <DropDownItem onClick={() => handleSearchDropDownItemClick("Author")}>
-                Author
-              </DropDownItem>
-              <DropDownItem onClick={() => handleSearchDropDownItemClick("ISBN")}>
-                ISBN
-              </DropDownItem>
+              {["Title", "Author", "ISBN"].map((item) => (
+                <DropDownItem key={item} onClick={() => handleSearchDropDownItemClick(item)}>
+                  {item}
+                </DropDownItem>
+              ))}
             </DropDownContent>
           </DropDownWrapper>
 
           <DropDownWrapper>
-            <DropDownButton onClick={toggleSortDropDown}>
+            <DropDownButton type="button" onClick={toggleSortDropDown}>
               Sort By: {sort}
             </DropDownButton>
             <DropDownContent open={sortDropDownOpen}>
-              <DropDownItem onClick={() => handleSortDropDownItemClick("Relevance")}>
-                Relevance
-              </DropDownItem>
-              <DropDownItem onClick={() => handleSortDropDownItemClick("Newest")}>
-                Newest
-              </DropDownItem>
-              <DropDownItem onClick={() => handleSortDropDownItemClick("Rating")}>
-                Rating
-              </DropDownItem>
+              {["Relevance", "Newest", "Rating"].map((item) => (
+                <DropDownItem key={item} onClick={() => handleSortDropDownItemClick(item)}>
+                  {item}
+                </DropDownItem>
+              ))}
             </DropDownContent>
           </DropDownWrapper>
 
@@ -201,71 +250,46 @@ const AddBook = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={`Enter ${criteria}`}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
           />
 
-          <Button onClick={handleSearch}>Search</Button>
+          <Button type="submit">Search</Button>
         </SearchWrapper>
 
-        <GridWrapper>
+        <BookGridWithLoading loading={loading}>
           {books.length > 0 &&
-            books.slice((page - 1) * 15, page * 15).map((book) => (
-              <Mosaic key={book.isbn} {...book}>
-                <div
-                  style={{
-                    border: "2px solid #ccc",
-                    padding: "15px",
-                    minHeight: "320px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <BookCard {...book} />
+            books.slice((page - 1) * pageSize, page * pageSize).map((book) => (
+              <div key={book.isbn}>
+                <BookCardWithImageLoading {...book} />
+                <ButtonWrapper>
                   <CardButton variant="add" onClick={() => addtoLib(book)}>
                     {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
                   </CardButton>
-                </div>
-              </Mosaic>
+                </ButtonWrapper>
+              </div>
             ))}
-        </GridWrapper>
+        </BookGridWithLoading>
+
         {books.length > 0 && totalPages > 1 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "20px",
-            }}
-          >
-            <div>
-              {page > 1 && (
-                <Button onClick={() => setPage(page - 1)} disabled={page <= 1}>
-                  {"<"}
-                </Button>
-              )}
-
-              {totalPages > 1 &&
-                Array.from({ length: totalPages }, (_, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => setPage(index + 1)}
-                    style={{ margin: "5px" }}
-                  >
-                    {index + 1}
-                  </Button>
-                ))}
-
-              {page < totalPages && (
-                <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
-                  {">"}
-                </Button>
-              )}
-            </div>
-          </div>
+          <PagePagination>
+            {page > 1 && (
+              <PaginationButton onClick={() => setPage(page - 1)}>{"<"}</PaginationButton>
+            )}
+            {Array.from({ length: totalPages }, (_, index) => (
+              <PaginationButton
+                key={index}
+                onClick={() => setPage(index + 1)}
+                disabled={page === index + 1}
+              >
+                {index + 1}
+              </PaginationButton>
+            ))}
+            {page < totalPages && (
+              <PaginationButton onClick={() => setPage(page + 1)}>{">"}</PaginationButton>
+            )}
+          </PagePagination>
         )}
-
       </Container>
-
     </PageWrapper>
   );
 };
