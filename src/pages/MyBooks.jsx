@@ -86,7 +86,7 @@ const MyBooks = () => {
     const [loading, setLoading] = useState(true);
 
     const bookList = Object.values(books);
-    const pageSize = 21; 
+    const pageSize = 24; 
     const totalPages = Math.ceil(bookList.length / pageSize);
 
     useEffect(() => {

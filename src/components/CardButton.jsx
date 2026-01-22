@@ -21,10 +21,12 @@ const StyledButton = styled.button`
 `;
 
 
-const CardButton = ({ variant = "add", children, onClick }) => {
+const CardButton = ({ type = "button", variant = "add", children, onClick, ...props }) => {
     return (
         <StyledButton variant={variant} onClick={onClick}>
-            {children}
+            <button type={type} {...props} style={{ background: "transparent", border: "none", color: "inherit", cursor: "pointer", fontWeight: "bold" }}>
+                {children}
+            </button>
         </StyledButton>
     );
 };

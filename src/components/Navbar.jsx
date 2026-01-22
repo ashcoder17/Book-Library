@@ -40,7 +40,7 @@ const StyledLink = styled(NavLink)`
   font-size: 18px;
   font-weight: 500;
   padding: 10px 15px;
-  border-radius: 5px;
+
   display: flex;
   align-items: center;
   height: 100%;
