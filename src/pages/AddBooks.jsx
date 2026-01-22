@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import styled, { keyframes } from "styled-components";
 
 import fetchQuery from "../components/fetchQuery";
@@ -9,6 +9,8 @@ import BookGrid from "../components/BookGrid";
 
 import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
 import withImageLoading from "../components/hoc/withImageLoading";
+
+import { ThemeContext } from "../components/ThemeContext";
 
 const shine = keyframes`
   0% { background-position: -200px 0; }
@@ -114,26 +116,27 @@ const InputWrapper = styled.div`
   position: relative;
 `;
 
-
 const SuggestionBox = styled.div`
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   width: 100%;
-  background: #1f1f1f;
+  background: ${(props) => (props.dark ? "#ffffff" : "#1f1f1f")};
   border-radius: 12px;
   z-index: 20;
   max-height: 280px;
   overflow-y: auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 `;
 
 const SuggestionItem = styled.div`
   padding: 10px 14px;
   cursor: pointer;
-  color: #fff;
+  color: ${(props) => (props.dark ? "#121212" : "#ffffff")};
 
   &:hover {
     background: #ff416c;
+    color: #ffffff;
   }
 `;
 
@@ -182,6 +185,8 @@ const PaginationButton = styled(Button)`
 `;
 
 const AddBook = () => {
+  const { darkMode } = useContext(ThemeContext);
+
   const [criteria, setCriteria] = useState("Title");
   const [inputValue, setInputValue] = useState("");
   const [sort, setSort] = useState("Relevance");
@@ -194,11 +199,12 @@ const AddBook = () => {
   const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-  return () => {
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
-  };
-}, []);
+    return () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
+  }, []);
 
   const pageSize = 24;
   const totalPages = Math.ceil(books.length / pageSize);
@@ -228,41 +234,43 @@ const AddBook = () => {
     setSearchDropDownOpen(!searchDropDownOpen);
     setSortDropDownOpen(false);
   };
+
   const toggleSortDropDown = () => {
     setSortDropDownOpen(!sortDropDownOpen);
     setSearchDropDownOpen(false);
   };
+
   const handleSearchDropDownItemClick = (newCriteria) => {
     setCriteria(newCriteria);
     setSearchDropDownOpen(false);
   };
+
   const handleSortDropDownItemClick = (newSort) => {
     setSort(newSort);
     setSortDropDownOpen(false);
   };
 
-const fetchSuggestions = async (criteria, value) => {
-  const res = await fetchQuery(null, criteria, value, "Relevance");
-  return res?.slice(0, 6) || [];
-};
+  const fetchSuggestions = async (criteria, value) => {
+    const res = await fetchQuery(null, criteria, value, "Relevance");
+    return res?.slice(0, 6) || [];
+  };
 
-const lastRequestId = useRef(0);
+  const lastRequestId = useRef(0);
 
-const handleLiveSearch = async (value) => {
-  if (!value.trim()) {
-    setSuggestions([]);
-    setShowSuggestions(false);
-    return;
-  }
+  const handleLiveSearch = async (value) => {
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
-  const requestId = ++lastRequestId.current;
+    const requestId = ++lastRequestId.current;
+    const result = await fetchSuggestions(criteria, value);
+    if (requestId !== lastRequestId.current) return;
 
-  const result = await fetchSuggestions(criteria, value);
-
-  if (requestId !== lastRequestId.current) return;
-  setSuggestions(result);
-  setShowSuggestions(true);
-};
+    setSuggestions(result);
+    setShowSuggestions(true);
+  };
 
   const BookCardWithImageLoading = (props) => {
     const ImageWithLoading = withImageLoading(({ src, alt }) => (
@@ -283,9 +291,9 @@ const handleLiveSearch = async (value) => {
             <DropDownButton type="button" onClick={toggleSearchDropDown}>
               Search By: {criteria}
             </DropDownButton>
-            <DropDownContent type="button" open={searchDropDownOpen}>
+            <DropDownContent open={searchDropDownOpen}>
               {["Title", "Author", "ISBN"].map((item) => (
-                <DropDownItem type="button"key={item} onClick={() => handleSearchDropDownItemClick(item)}>
+                <DropDownItem key={item} onClick={() => handleSearchDropDownItemClick(item)}>
                   {item}
                 </DropDownItem>
               ))}
@@ -296,51 +304,51 @@ const handleLiveSearch = async (value) => {
             <DropDownButton type="button" onClick={toggleSortDropDown}>
               Sort By: {sort}
             </DropDownButton>
-            <DropDownContent type="button" open={sortDropDownOpen}>
+            <DropDownContent open={sortDropDownOpen}>
               {["Relevance", "Newest", "Rating"].map((item) => (
-                <DropDownItem type="button" key={item} onClick={() => handleSortDropDownItemClick(item)}>
+                <DropDownItem key={item} onClick={() => handleSortDropDownItemClick(item)}>
                   {item}
                 </DropDownItem>
               ))}
             </DropDownContent>
           </DropDownWrapper>
 
-          <InputWrapper><Input
-            type="text"
-            value={inputValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setInputValue(value);
+          <InputWrapper>
+            <Input
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInputValue(value);
 
-              if (typingTimeout.current) {
-                clearTimeout(typingTimeout.current);
-              }
-              typingTimeout.current = setTimeout(() => {
-                handleLiveSearch(value);
-              }, 500);
-        }}
-  onFocus={() => suggestions.length && setShowSuggestions(true)}
-  placeholder={`Enter ${criteria}`}
-  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-/>
-          {showSuggestions && suggestions.length > 0 && (
-                          <SuggestionBox>
+                if (typingTimeout.current) clearTimeout(typingTimeout.current);
+                typingTimeout.current = setTimeout(() => {
+                  handleLiveSearch(value);
+                }, 500);
+              }}
+              onFocus={() => suggestions.length && setShowSuggestions(true)}
+              placeholder={`Enter ${criteria}`}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            />
+
+            {showSuggestions && suggestions.length > 0 && (
+              <SuggestionBox dark={darkMode}>
                 {suggestions.map((book) => (
                   <SuggestionItem
+                    dark={darkMode}
                     key={book.isbn}
                     onClick={() => {
                       setInputValue(book.title);
                       setShowSuggestions(false);
                       handleSearch();
-            }}
-          >
-          {book.title}
-          </SuggestionItem>
+                    }}
+                  >
+                    {book.title}
+                  </SuggestionItem>
                 ))}
               </SuggestionBox>
             )}
           </InputWrapper>
-
 
           <Button type="submit">Search</Button>
         </SearchWrapper>
@@ -351,14 +359,9 @@ const handleLiveSearch = async (value) => {
               <div key={book.isbn}>
                 <BookCardWithImageLoading {...book} />
                 <ButtonWrapper>
-                  <CardButton
-                    type="button"
-                    variant="add"
-                    onClick={() => addtoLib(book)}
-                  >
+                  <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
                     {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
                   </CardButton>
-
                 </ButtonWrapper>
               </div>
             ))}
@@ -366,9 +369,12 @@ const handleLiveSearch = async (value) => {
 
         {books.length > 0 && totalPages > 1 && (
           <PagePagination>
-            {page > 1 && ( 
-              <PaginationButton type="button" onClick={() => setPage(page - 1)}>{"<"}</PaginationButton>
+            {page > 1 && (
+              <PaginationButton type="button" onClick={() => setPage(page - 1)}>
+                {"<"}
+              </PaginationButton>
             )}
+
             {Array.from({ length: totalPages }, (_, index) => (
               <PaginationButton
                 key={index}
@@ -378,8 +384,11 @@ const handleLiveSearch = async (value) => {
                 {index + 1}
               </PaginationButton>
             ))}
+
             {page < totalPages && (
-              <PaginationButton type="button"onClick={() => setPage(page + 1)}>{">"}</PaginationButton>
+              <PaginationButton type="button" onClick={() => setPage(page + 1)}>
+                {">"}
+              </PaginationButton>
             )}
           </PagePagination>
         )}
