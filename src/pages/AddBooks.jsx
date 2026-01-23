@@ -116,6 +116,7 @@ const InputWrapper = styled.div`
   position: relative;
 `;
 
+
 const SuggestionBox = styled.div`
   position: absolute;
   top: calc(100% + 6px);
@@ -201,10 +202,10 @@ const AddBook = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    return () => {
-      if (typingTimeout.current) clearTimeout(typingTimeout.current);
-    };
-  }, []);
+  return () => {
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+  };
+}, []);
 
   const pageSize = 24;
   const totalPages = Math.ceil(books.length / pageSize);
@@ -214,7 +215,7 @@ const AddBook = () => {
     if (!inputValue.trim()) return;
     setBooks([]);
     setLoading(true);
-    const result = await fetchQuery(null, criteria, inputValue, sort);
+    const result = await fetchQuery("search", criteria, inputValue, sort);
     setShowSuggestions(false);
     setSuggestions([]);
     setBooks(result || []);
@@ -250,27 +251,27 @@ const AddBook = () => {
     setSortDropDownOpen(false);
   };
 
-  const fetchSuggestions = async (criteria, value) => {
-    const res = await fetchQuery(null, criteria, value, "Relevance");
-    return res?.slice(0, 6) || [];
-  };
+const fetchSuggestions = async (criteria, value) => {
+    const res = await fetchQuery("search", criteria, value, "Relevance");
+  return res?.slice(0, 6) || [];
+};
 
   const lastRequestId = useRef(0);
 
-  const handleLiveSearch = async (value) => {
-    if (!value.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
+const handleLiveSearch = async (value) => {
+  if (!value.trim()) {
+    setSuggestions([]);
+    setShowSuggestions(false);
+    return;
+  }
 
-    const requestId = ++lastRequestId.current;
-    const result = await fetchSuggestions(criteria, value);
-    if (requestId !== lastRequestId.current) return;
+  const requestId = ++lastRequestId.current;
+  const result = await fetchSuggestions(criteria, value);
+  if (requestId !== lastRequestId.current) return;
 
-    setSuggestions(result);
-    setShowSuggestions(true);
-  };
+  setSuggestions(result);
+  setShowSuggestions(true);
+};
 
   const BookCardWithImageLoading = (props) => {
     const ImageWithLoading = withImageLoading(({ src, alt }) => (
@@ -315,23 +316,23 @@ const AddBook = () => {
 
           <InputWrapper>
             <Input
-              type="text"
-              value={inputValue}
-              onChange={(e) => {
-                const value = e.target.value;
-                setInputValue(value);
+            type="text"
+            value={inputValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInputValue(value);
 
                 if (typingTimeout.current) clearTimeout(typingTimeout.current);
-                typingTimeout.current = setTimeout(() => {
-                  handleLiveSearch(value);
-                }, 500);
-              }}
-              onFocus={() => suggestions.length && setShowSuggestions(true)}
-              placeholder={`Enter ${criteria}`}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            />
+              typingTimeout.current = setTimeout(() => {
+                handleLiveSearch(value);
+              }, 500);
+        }}
+  onFocus={() => suggestions.length && setShowSuggestions(true)}
+  placeholder={`Enter ${criteria}`}
+  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+/>
 
-            {showSuggestions && suggestions.length > 0 && (
+          {showSuggestions && suggestions.length > 0 && (
               <SuggestionBox dark={darkMode}>
                 {suggestions.map((book) => (
                   <SuggestionItem
@@ -341,14 +342,15 @@ const AddBook = () => {
                       setInputValue(book.title);
                       setShowSuggestions(false);
                       handleSearch();
-                    }}
-                  >
-                    {book.title}
-                  </SuggestionItem>
+            }}
+          >
+          {book.title}
+          </SuggestionItem>
                 ))}
               </SuggestionBox>
             )}
           </InputWrapper>
+
 
           <Button type="submit">Search</Button>
         </SearchWrapper>
@@ -362,6 +364,7 @@ const AddBook = () => {
                   <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
                     {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
                   </CardButton>
+
                 </ButtonWrapper>
               </div>
             ))}
@@ -369,7 +372,7 @@ const AddBook = () => {
 
         {books.length > 0 && totalPages > 1 && (
           <PagePagination>
-            {page > 1 && (
+            {page > 1 && ( 
               <PaginationButton type="button" onClick={() => setPage(page - 1)}>
                 {"<"}
               </PaginationButton>

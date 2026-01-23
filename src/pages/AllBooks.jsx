@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import PageWrapper from "../components/PageWrapper";
 import styled, { keyframes } from "styled-components";
+import fetchQuery from "../components/fetchQuery";
+import withLoadingAnimation from "../components/hoc/withLoadingAnimation";  
+import BookGrid from "../components/BookGrid";
+import withImageLoading from "../components/hoc/withImageLoading";
+import BookCard from "../components/BookCard";
+import CardButton from "../components/CardButton";
 
 const shine = keyframes`
   0% { background-position: -200px 0; }
@@ -37,7 +43,7 @@ const Heading = styled.h2`
 
 const CategoryGrid = styled.div`
   display: grid;
-  gap: 30px;
+  gap: 10px;
   grid-template-columns: repeat(2, 1fr);
 
   @media (min-width: 480px) {
@@ -49,13 +55,19 @@ const CategoryGrid = styled.div`
   }
 
   @media (min-width: 1024px) {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
 `;
+const ButtonWrapper = styled.div`
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+`;
+
 
 const CategoryCard = styled.div`
   background: #fff;
-  padding: 20px;
+  padding: 10px;
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
@@ -81,20 +93,56 @@ const PlaceholderText = styled.p`
 `;
 
 const AllBooks = () => {
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("fiction");
+  const [books, setBooks] = useState([]);
+  const [booksLoading, setBooksLoading] = useState(false);
+  const [addedBooks, setAddedBooks] = useState({});
+
+  const addtoLib = (book) => {
+    if (addedBooks[book.title]) return;
+    setAddedBooks((prev) => ({ ...prev, [book.title]: true }));
+    let myBooks = JSON.parse(localStorage.getItem("books")) || {};
+    myBooks[book.title] = book;
+    localStorage.setItem("books", JSON.stringify(myBooks));
+  };
+
+  const handleCategoryClick = async (category) => {
+  setSelectedCategory(category);
+  setBooksLoading(true);
+
+  try {
+    const fetchedBooks = await fetchQuery(
+      "category",
+      "Category",
+      category.toLowerCase(),
+      "Relevance"
+    );
+    setBooks(fetchedBooks);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setBooksLoading(false);
+  }
+};
+
+  const BookCardWithImageLoading = (props) => {
+    const ImageWithLoading = withImageLoading(({ src, alt }) => (
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
+    ));
+    return <BookCard {...props} ImageComponent={ImageWithLoading} />;
+  };
 
   useEffect(() => {
     const fetchCategories = () => {
       setTimeout(() => {
         setCategories([
           "Fiction",
-          "Non-fiction",
-          "Sci-Fi",
+          "SciFi",
           "Biography",
           "Mystery",
           "Fantasy",
-          "Self-help",
           "Historical"
         ]);
         setLoading(false);
@@ -103,6 +151,11 @@ const AllBooks = () => {
 
     fetchCategories();
   }, []);
+
+  useEffect(() => {    handleCategoryClick("Fiction");
+  }, []);
+
+  const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
   return (
     <PageWrapper>
@@ -114,12 +167,36 @@ const AllBooks = () => {
         ) : (
           <CategoryGrid>
             {categories.map((category, index) => (
-              <CategoryCard key={index}>
+              <CategoryCard key={index} onClick={() => handleCategoryClick(category)}>
                 {category}
               </CategoryCard>
             ))}
           </CategoryGrid>
-        )}
+          )}
+          {selectedCategory && (
+            <>
+
+              {booksLoading ? (
+                  <PlaceholderText>Loading books...</PlaceholderText>
+                        ) : books.length === 0 ? (
+                  <PlaceholderText>No books found</PlaceholderText>
+                ) : (
+                <BookGridWithLoading loading={loading}>
+                      {books.length > 0 &&
+                        books.map((book) => (
+                        <div key={book.isbn}>
+                <BookCardWithImageLoading {...book} />
+                <ButtonWrapper>
+                  <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
+                    {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
+                  </CardButton>
+                </ButtonWrapper>
+              </div>
+            ))}
+        </BookGridWithLoading>
+              )}
+            </>
+          )}  
       </Container>
     </PageWrapper>
   );
