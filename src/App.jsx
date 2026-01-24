@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import AllBooks from "./pages/AllBooks";
-import AddBook from "./pages/AddBooks";
+import AddBook from "./pages/AddBook";
 import About from "./pages/About";
 import MyBooks from "./pages/MyBooks";
 

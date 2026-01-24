@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext, memo } from "react";
 import styled, { keyframes } from "styled-components";
 
 import fetchQuery from "../components/fetchQuery";
@@ -9,12 +9,10 @@ import BookGrid from "../components/BookGrid";
 import fetchBookDetails from "../components/fetchBookDetails";
 
 import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
-import withImageLoading from "../components/hoc/withImageLoading";
-
 import SidePanel from "../components/SidePanel";
-
 import { ThemeContext } from "../components/ThemeContext";
 
+// ====== Styles ======
 const shine = keyframes`
   0% { background-position: -200px 0; }
   100% { background-position: 200px 0; }
@@ -119,7 +117,6 @@ const InputWrapper = styled.div`
   position: relative;
 `;
 
-
 const SuggestionBox = styled.div`
   position: absolute;
   top: calc(100% + 6px);
@@ -161,6 +158,7 @@ const Button = styled.button`
     box-shadow: 0 12px 30px rgba(255, 65, 108, 0.6);
   }
 `;
+
 const ButtonWrapper = styled.div`
   margin-top: 8px;
   display: flex;
@@ -187,6 +185,29 @@ const PaginationButton = styled(Button)`
   }
 `;
 
+// ====== HOC: Image Loading with Cache ======
+const withImageLoading = (Component) => ({ src, alt, ...props }) => {
+  const [loaded, setLoaded] = useState(false);
+  const cache = useRef({});
+
+  useEffect(() => {
+    if (cache.current[src]) {
+      setLoaded(true);
+      return;
+    }
+
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      cache.current[src] = true;
+      setLoaded(true);
+    };
+  }, [src]);
+
+  return loaded ? <Component src={src} alt={alt} {...props} /> : <div style={{ width: "100%", height: "200px", background: "#eee" }} />;
+};
+
+// ====== AddBook Component ======
 const AddBook = () => {
   const { darkMode } = useContext(ThemeContext);
 
@@ -198,36 +219,54 @@ const AddBook = () => {
   const [sortDropDownOpen, setSortDropDownOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const typingTimeout = useRef(null);
   const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
   const [panelLoading, setPanelLoading] = useState(false);
 
-  useEffect(() => {
-  return () => {
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
-  };
-}, []);
-
-useEffect(() => {
-  const stored = JSON.parse(localStorage.getItem("books")) || {};
-  setAddedBooks(stored);
-}, []);
-
+  const typingTimeout = useRef(null);
+  const bookCache = useRef({});
+  const lastRequestId = useRef(0);
   const pageSize = 24;
+
   const totalPages = Math.ceil(books.length / pageSize);
 
+  // ====== Effects ======
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("books")) || {};
+    setAddedBooks(stored);
+
+    return () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
+  }, []);
+
+  // ====== Memoized BookCard ======
+  const BookCardWithImageLoading = (props) => {
+    const ImageWithLoading = withImageLoading(({ src, alt }) => (
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
+    ));
+    return <BookCard {...props} ImageComponent={ImageWithLoading} />;
+  };
+  const MemoizedBookCard = memo(BookCardWithImageLoading);
+
+  // ====== Handlers ======
   const handleBookClick = async (book) => {
-  setPanelLoading(true);
-  setSelectedBook(book); // show panel immediately
+    setPanelLoading(true);
 
-  const detailedBook = await fetchBookDetails(book);
+    // Use cached detailed book if available
+    if (bookCache.current[book.id]) {
+      setSelectedBook(bookCache.current[book.id]);
+      setPanelLoading(false);
+      return;
+    }
 
-  setSelectedBook(detailedBook);
-  setPanelLoading(false);
-};
+    const detailedBook = await fetchBookDetails(book);
+    bookCache.current[book.id] = detailedBook;
+    setSelectedBook(detailedBook);
+    setPanelLoading(false);
+  };
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -235,19 +274,48 @@ useEffect(() => {
     setBooks([]);
     setLoading(true);
     const result = await fetchQuery("search", criteria, inputValue, sort);
-    console.log("SEARCH RESULT:", result); // Debugging line
-    setShowSuggestions(false);
     setSuggestions([]);
+    setShowSuggestions(false);
     setBooks(result || []);
     setPage(1);
     setLoading(false);
   };
 
-  const addtoLib = (book) => {
-    if (addedBooks[book.title]) return;
-    setAddedBooks((prev) => ({ ...prev, [book.title]: true }));
-    let myBooks = JSON.parse(localStorage.getItem("books")) || {};
+  const handleLiveSearch = async (value) => {
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const requestId = ++lastRequestId.current;
+    const result = await fetchQuery("search", criteria, value, "Relevance");
+    if (requestId !== lastRequestId.current) return;
+
+    setSuggestions(result?.slice(0, 6) || []);
+    setShowSuggestions(true);
+  };
+
+  const addToLib = (book) => {
+    if (addedBooks[book.title]) {
+      removeFromLib(book.title);
+      return;
+    }
+
+    setAddedBooks((prev) => ({ ...prev, [book.title]: book }));
+    const myBooks = JSON.parse(localStorage.getItem("books")) || {};
     myBooks[book.title] = book;
+    localStorage.setItem("books", JSON.stringify(myBooks));
+  };
+
+  const removeFromLib = (title) => {
+    setAddedBooks((prev) => {
+      const updated = { ...prev };
+      delete updated[title];
+      return updated;
+    });
+    const myBooks = JSON.parse(localStorage.getItem("books")) || {};
+    delete myBooks[title];
     localStorage.setItem("books", JSON.stringify(myBooks));
   };
 
@@ -271,35 +339,7 @@ useEffect(() => {
     setSortDropDownOpen(false);
   };
 
-const fetchSuggestions = async (criteria, value) => {
-    const res = await fetchQuery("search", criteria, value, "Relevance");
-  return res?.slice(0, 6) || [];
-};
-
-  const lastRequestId = useRef(0);
-
-const handleLiveSearch = async (value) => {
-  if (!value.trim()) {
-    setSuggestions([]);
-    setShowSuggestions(false);
-    return;
-  }
-
-  const requestId = ++lastRequestId.current;
-  const result = await fetchSuggestions(criteria, value);
-  if (requestId !== lastRequestId.current) return;
-
-  setSuggestions(result);
-  setShowSuggestions(true);
-};
-
-  const BookCardWithImageLoading = (props) => {
-    const ImageWithLoading = withImageLoading(({ src, alt }) => (
-      <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
-    ));
-    return <BookCard {...props} ImageComponent={ImageWithLoading} />;
-  };
-
+  // ====== Render ======
   const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
   return (
@@ -308,6 +348,7 @@ const handleLiveSearch = async (value) => {
         <Heading>Discover Your Next Favorite Book</Heading>
 
         <SearchWrapper onSubmit={handleSearch}>
+          {/* Search By Dropdown */}
           <DropDownWrapper>
             <DropDownButton type="button" onClick={toggleSearchDropDown}>
               Search By: {criteria}
@@ -321,6 +362,7 @@ const handleLiveSearch = async (value) => {
             </DropDownContent>
           </DropDownWrapper>
 
+          {/* Sort Dropdown */}
           <DropDownWrapper>
             <DropDownButton type="button" onClick={toggleSortDropDown}>
               Sort By: {sort}
@@ -334,65 +376,70 @@ const handleLiveSearch = async (value) => {
             </DropDownContent>
           </DropDownWrapper>
 
+          {/* Search Input */}
           <InputWrapper>
             <Input
-            type="text"
-            value={inputValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setInputValue(value);
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInputValue(value);
 
                 if (typingTimeout.current) clearTimeout(typingTimeout.current);
-              typingTimeout.current = setTimeout(() => {
-                handleLiveSearch(value);
-              }, 500);
-        }}
-  onFocus={() => suggestions.length && setShowSuggestions(true)}
-  placeholder={`Enter ${criteria}`}
-  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-/>
+                typingTimeout.current = setTimeout(() => {
+                  handleLiveSearch(value);
+                }, 500);
+              }}
+              onFocus={() => suggestions.length && setShowSuggestions(true)}
+              placeholder={`Enter ${criteria}`}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            />
 
-          {showSuggestions && suggestions.length > 0 && (
+            {showSuggestions && suggestions.length > 0 && (
               <SuggestionBox dark={darkMode}>
                 {suggestions.map((book) => (
                   <SuggestionItem
                     dark={darkMode}
                     key={book.id}
-                    onClick={() => {
+                    onMouseDown={() => {
                       setInputValue(book.title);
                       setShowSuggestions(false);
                       handleSearch();
-            }}
-          >
-          {book.title}
-          </SuggestionItem>
+                    }}
+                  >
+                    {book.title}
+                  </SuggestionItem>
                 ))}
               </SuggestionBox>
             )}
           </InputWrapper>
 
-
           <Button type="submit">Search</Button>
         </SearchWrapper>
 
+        {/* Book Grid */}
         <BookGridWithLoading loading={loading}>
           {books.length > 0 &&
             books.slice((page - 1) * pageSize, page * pageSize).map((book) => (
               <div key={book.id}>
-                <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)}/>
+                <MemoizedBookCard {...book} onClick={() => handleBookClick(book)} />
                 <ButtonWrapper>
-                  <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
-                    {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
+                  <CardButton
+                    type="button"
+                    variant="add"
+                    onClick={() => addToLib(book)}
+                  >
+                    {addedBooks[book.title] ? "Added! Click to Remove" : "Add to Library"}
                   </CardButton>
-
                 </ButtonWrapper>
               </div>
             ))}
         </BookGridWithLoading>
 
+        {/* Pagination */}
         {books.length > 0 && totalPages > 1 && (
           <PagePagination>
-            {page > 1 && ( 
+            {page > 1 && (
               <PaginationButton type="button" onClick={() => setPage(page - 1)}>
                 {"<"}
               </PaginationButton>
@@ -416,14 +463,16 @@ const handleLiveSearch = async (value) => {
           </PagePagination>
         )}
       </Container>
+
+      {/* Side Panel */}
       <SidePanel
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
-        inLibrary={Boolean(localStorage.getItem("books") && JSON.parse(localStorage.getItem("books"))[selectedBook?.title])}
-        onAdd={addtoLib}
-        onRemove={()=>{}}
+        inLibrary={!!selectedBook && !!addedBooks[selectedBook.title]}
+        onAdd={addToLib}
+        onRemove={removeFromLib}
+        loading={panelLoading}
       />
-
     </PageWrapper>
   );
 };

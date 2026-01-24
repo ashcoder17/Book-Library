@@ -5,6 +5,7 @@ import BookCard from "../components/BookCard";
 import BookGrid from "../components/BookGrid";
 import CardButton from "../components/CardButton";
 import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
+import withImageLoading from "../components/hoc/withImageLoading";
 import SidePanel from "../components/SidePanel";
 import fetchBookDetails from "../components/fetchBookDetails";
 
@@ -42,7 +43,7 @@ const RemoveWrapper = styled.div`
 const PaginationWrapper = styled.div`
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   margin-top: 20px;
   flex-wrap: wrap;
 `;
@@ -79,7 +80,6 @@ const NoBooks = styled.p`
   margin-top: 40px;
 `;
 
-
 const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
 const MyBooks = () => {
@@ -90,7 +90,7 @@ const MyBooks = () => {
     const [panelLoading, setPanelLoading] = useState(false);
 
     const bookList = Object.values(books);
-    const pageSize = 24; 
+    const pageSize = 24;
     const totalPages = Math.ceil(bookList.length / pageSize);
 
     useEffect(() => {
@@ -99,23 +99,41 @@ const MyBooks = () => {
         setTimeout(() => {
             setBooks(storedBooks);
             setLoading(false);
-        }, 800); 
+        }, 800);
     }, []);
+
     const handleBookClick = async (book) => {
         setPanelLoading(true);
-        setSelectedBook(book); // show panel immediately
-
+        setSelectedBook(book);
         const detailedBook = await fetchBookDetails(book);
-
         setSelectedBook(detailedBook);
         setPanelLoading(false);
     };
 
-    const removeLib = (title) => {
-        const updatedBooks = { ...books };
-        delete updatedBooks[title];
-        setBooks(updatedBooks);
-        localStorage.setItem("books", JSON.stringify(updatedBooks));
+    const addToLib = (book) => {
+        setBooks((prev) => ({ ...prev, [book.title]: book }));
+        const myBooks = JSON.parse(localStorage.getItem("books")) || {};
+        myBooks[book.title] = book;
+        localStorage.setItem("books", JSON.stringify(myBooks));
+    };
+
+    const removeFromLib = (title) => {
+        setBooks((prev) => {
+            const updated = { ...prev };
+            delete updated[title];
+            return updated;
+        });
+        const myBooks = JSON.parse(localStorage.getItem("books")) || {};
+        delete myBooks[title];
+        localStorage.setItem("books", JSON.stringify(myBooks));
+    };
+
+    // Wrap BookCard with image loading HOC
+    const BookCardWithImageLoading = (props) => {
+        const ImageWithLoading = withImageLoading(({ src, alt }) => (
+            <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
+        ));
+        return <BookCard {...props} ImageComponent={ImageWithLoading} />;
     };
 
     return (
@@ -132,11 +150,11 @@ const MyBooks = () => {
                                 .slice((page - 1) * pageSize, page * pageSize)
                                 .map((book) => (
                                     <div key={book.id}>
-                                        <BookCard {...book} onClick={() => handleBookClick(book)}/>
+                                        <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)} />
                                         <RemoveWrapper>
                                             <CardButton
                                                 variant="remove"
-                                                onClick={() => removeLib(book.title)}
+                                                onClick={() => removeFromLib(book.title)}
                                             >
                                                 Remove
                                             </CardButton>
@@ -148,9 +166,7 @@ const MyBooks = () => {
                         {totalPages > 1 && (
                             <PaginationWrapper>
                                 {page > 1 && (
-                                    <PaginationButton onClick={() => setPage(page - 1)}>
-                                        {"<"}
-                                    </PaginationButton>
+                                    <PaginationButton onClick={() => setPage(page - 1)}>{"<"}</PaginationButton>
                                 )}
 
                                 {Array.from({ length: totalPages }, (_, i) => (
@@ -164,23 +180,21 @@ const MyBooks = () => {
                                 ))}
 
                                 {page < totalPages && (
-                                    <PaginationButton onClick={() => setPage(page + 1)}>
-                                        {">"}
-                                    </PaginationButton>
+                                    <PaginationButton onClick={() => setPage(page + 1)}>{" > "}</PaginationButton>
                                 )}
                             </PaginationWrapper>
                         )}
                     </>
                 )}
             </Container>
+
             <SidePanel
                 book={selectedBook}
                 onClose={() => setSelectedBook(null)}
-                inLibrary={Boolean(localStorage.getItem("books") && JSON.parse(localStorage.getItem("books"))[selectedBook?.title])}
-                onAdd={()=>{}}
-                onRemove={removeLib}
+                inLibrary={!!selectedBook && !!books[selectedBook.title]}
+                onAdd={addToLib}
+                onRemove={removeFromLib}
             />
-
         </PageWrapper>
     );
 };

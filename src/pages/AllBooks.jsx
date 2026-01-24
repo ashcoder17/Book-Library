@@ -2,23 +2,17 @@ import React, { useState, useEffect } from "react";
 import PageWrapper from "../components/PageWrapper";
 import styled, { keyframes } from "styled-components";
 import fetchQuery from "../components/fetchQuery";
-import withLoadingAnimation from "../components/hoc/withLoadingAnimation";  
+import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
 import BookGrid from "../components/BookGrid";
 import withImageLoading from "../components/hoc/withImageLoading";
 import BookCard from "../components/BookCard";
 import CardButton from "../components/CardButton";
 import SidePanel from "../components/SidePanel";
 import fetchBookDetails from "../components/fetchBookDetails";
-console.log("fetchBookDetails is:", fetchBookDetails); // Debugging line
 
 const shine = keyframes`
   0% { background-position: -200px 0; }
   100% { background-position: 200px 0; }
-`;
-
-const fadeInUp = keyframes`
-  0% { opacity: 0; transform: translateY(20px);}
-  100% { opacity: 1; transform: translateY(0);}
 `;
 
 const Container = styled.div`
@@ -61,12 +55,12 @@ const CategoryGrid = styled.div`
     grid-template-columns: repeat(6, 1fr);
   }
 `;
+
 const ButtonWrapper = styled.div`
   margin-top: 8px;
   display: flex;
   justify-content: center;
 `;
-
 
 const CategoryCard = styled.div`
   background: #fff;
@@ -113,34 +107,41 @@ const AllBooks = () => {
     localStorage.setItem("books", JSON.stringify(myBooks));
   };
 
+  const removeFromLib = (title) => {
+    setAddedBooks((prev) => {
+      const updated = { ...prev };
+      delete updated[title];
+      return updated;
+    });
+    const myBooks = JSON.parse(localStorage.getItem("books")) || {};
+    delete myBooks[title];
+    localStorage.setItem("books", JSON.stringify(myBooks));
+  };
+
   const handleBookClick = async (book) => {
-  console.log("BOOK CLICKED:", book.title); // Debugging line
-  setPanelLoading(true);
-  const details = await fetchBookDetails(book);
-  console.log("DETAILS:", details);
-  setSelectedBook(details);
-  console.log("BOOK fetched:", book.title); // Debugging line
-  setPanelLoading(false);
-};
+    setPanelLoading(true);
+    const details = await fetchBookDetails(book);
+    setSelectedBook(details);
+    setPanelLoading(false);
+  };
 
   const handleCategoryClick = async (category) => {
-  setSelectedCategory(category);
-  setBooksLoading(true);
-
-  try {
-    const fetchedBooks = await fetchQuery(
-      "category",
-      "Category",
-      category.toLowerCase(),
-      "Relevance"
-    );
-    setBooks(fetchedBooks);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setBooksLoading(false);
-  }
-};
+    setSelectedCategory(category);
+    setBooksLoading(true);
+    try {
+      const fetchedBooks = await fetchQuery(
+        "category",
+        "Category",
+        category.toLowerCase(),
+        "Relevance"
+      );
+      setBooks(fetchedBooks);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setBooksLoading(false);
+    }
+  };
 
   const BookCardWithImageLoading = (props) => {
     const ImageWithLoading = withImageLoading(({ src, alt }) => (
@@ -168,11 +169,11 @@ const AllBooks = () => {
         setLoading(false);
       }, 1000);
     };
-
     fetchCategories();
   }, []);
 
-  useEffect(() => {    handleCategoryClick("Fiction");
+  useEffect(() => {
+    handleCategoryClick("Fiction");
   }, []);
 
   const BookGridWithLoading = withLoadingAnimation(BookGrid);
@@ -192,40 +193,46 @@ const AllBooks = () => {
               </CategoryCard>
             ))}
           </CategoryGrid>
-          )}
-          {selectedCategory && (
-            <>
+        )}
 
-              {booksLoading ? (
-                  <PlaceholderText>Loading books...</PlaceholderText>
-                        ) : books.length === 0 ? (
-                  <PlaceholderText>No books found</PlaceholderText>
-                ) : (
-                <BookGridWithLoading loading={loading}>
-                      {books.length > 0 &&
-                        books.map((book) => (
-                        <div key={book.id}>
-                <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)}/>
-                <ButtonWrapper>
-                  <CardButton type="button" variant="add" onClick={(e) => {e.stopPropagation(); addtoLib(book);}}>
-                    {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
-                  </CardButton>
-                </ButtonWrapper>
-              </div>
-            ))}
-        </BookGridWithLoading>
-              )}
-            </>
-          )}  
+        {selectedCategory && (
+          <>
+            {booksLoading ? (
+              <PlaceholderText>Loading books...</PlaceholderText>
+            ) : books.length === 0 ? (
+              <PlaceholderText>No books found</PlaceholderText>
+            ) : (
+              <BookGridWithLoading loading={loading}>
+                {books.map((book) => (
+                  <div key={book.id}>
+                    <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)} />
+                    <ButtonWrapper>
+                      <CardButton
+                        type="button"
+                        variant="add"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addedBooks[book.title] ? removeFromLib(book.title) : addtoLib(book);
+                        }}
+                      >
+                        {addedBooks[book.title] ? "Added! Click to Remove" : "Add to Library"}
+                      </CardButton>
+                    </ButtonWrapper>
+                  </div>
+                ))}
+              </BookGridWithLoading>
+            )}
+          </>
+        )}
       </Container>
+
       <SidePanel
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
-        inLibrary={!!addedBooks[selectedBook?.title]}
-        onAdd={addtoLib}
-        onRemove={()=>{}}
+        inLibrary={!!selectedBook && !!addedBooks[selectedBook.title]}
+        onAdd={(book) => addtoLib(book)}
+        onRemove={(title) => removeFromLib(title)}
       />
-
     </PageWrapper>
   );
 };

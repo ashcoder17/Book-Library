@@ -3,7 +3,7 @@ import axios from "axios";
 
 const fetchBookDetails = async (book) => {
   try {
-    console.log("Fetching details for book:", book); // Debugging line
+    console.log("Fetching details for book:", book);
     const workKey = book.id
     const res = await axios.get(`https://openlibrary.org${workKey}.json`);
     const rawDesc = res.data.description;
