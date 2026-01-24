@@ -12,7 +12,6 @@ import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
 import SidePanel from "../components/SidePanel";
 import { ThemeContext } from "../components/ThemeContext";
 
-
 const shine = keyframes`
   0% { background-position: -200px 0; }
   100% { background-position: 200px 0; }
@@ -203,7 +202,11 @@ const withImageLoading = (Component) => ({ src, alt, ...props }) => {
     };
   }, [src]);
 
-  return loaded ? <Component src={src} alt={alt} {...props} /> : <div style={{ width: "100%", height: "200px", background: "#eee" }} />;
+  return loaded ? (
+    <Component src={src} alt={alt} {...props} />
+  ) : (
+    <div style={{ width: "100%", height: "200px", background: "#eee" }} />
+  );
 };
 
 const AddBook = () => {
@@ -226,11 +229,13 @@ const AddBook = () => {
   const typingTimeout = useRef(null);
   const bookCache = useRef({});
   const lastRequestId = useRef(0);
-  const pageSize = 24;
 
+  const searchDropdownRef = useRef(null);
+  const sortDropdownRef = useRef(null);
+
+  const pageSize = 24;
   const totalPages = Math.ceil(books.length / pageSize);
 
-  // ====== Effects ======
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("books")) || {};
     setAddedBooks(stored);
@@ -240,20 +245,41 @@ const AddBook = () => {
     };
   }, []);
 
-  // ====== Memoized BookCard ======
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(e.target)
+      ) {
+        setSearchDropDownOpen(false);
+      }
+
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(e.target)
+      ) {
+        setSortDropDownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const BookCardWithImageLoading = (props) => {
     const ImageWithLoading = withImageLoading(({ src, alt }) => (
       <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />
     ));
     return <BookCard {...props} ImageComponent={ImageWithLoading} />;
   };
+
   const MemoizedBookCard = memo(BookCardWithImageLoading);
 
-  // ====== Handlers ======
   const handleBookClick = async (book) => {
     setPanelLoading(true);
 
-    // Use cached detailed book if available
     if (bookCache.current[book.id]) {
       setSelectedBook(bookCache.current[book.id]);
       setPanelLoading(false);
@@ -336,6 +362,7 @@ const AddBook = () => {
     setSort(newSort);
     setSortDropDownOpen(false);
   };
+
   const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
   return (
@@ -344,26 +371,32 @@ const AddBook = () => {
         <Heading>Discover Your Next Favorite Book</Heading>
 
         <SearchWrapper onSubmit={handleSearch}>
-          <DropDownWrapper>
+          <DropDownWrapper ref={searchDropdownRef}>
             <DropDownButton type="button" onClick={toggleSearchDropDown}>
               Search By: {criteria}
             </DropDownButton>
             <DropDownContent open={searchDropDownOpen}>
               {["Title", "Author", "ISBN"].map((item) => (
-                <DropDownItem key={item} onClick={() => handleSearchDropDownItemClick(item)}>
+                <DropDownItem
+                  key={item}
+                  onClick={() => handleSearchDropDownItemClick(item)}
+                >
                   {item}
                 </DropDownItem>
               ))}
             </DropDownContent>
           </DropDownWrapper>
 
-          <DropDownWrapper>
+          <DropDownWrapper ref={sortDropdownRef}>
             <DropDownButton type="button" onClick={toggleSortDropDown}>
               Sort By: {sort}
             </DropDownButton>
             <DropDownContent open={sortDropDownOpen}>
               {["Relevance", "Newest", "Rating"].map((item) => (
-                <DropDownItem key={item} onClick={() => handleSortDropDownItemClick(item)}>
+                <DropDownItem
+                  key={item}
+                  onClick={() => handleSortDropDownItemClick(item)}
+                >
                   {item}
                 </DropDownItem>
               ))}
@@ -378,14 +411,17 @@ const AddBook = () => {
                 const value = e.target.value;
                 setInputValue(value);
 
-                if (typingTimeout.current) clearTimeout(typingTimeout.current);
+                if (typingTimeout.current)
+                  clearTimeout(typingTimeout.current);
                 typingTimeout.current = setTimeout(() => {
                   handleLiveSearch(value);
                 }, 500);
               }}
               onFocus={() => suggestions.length && setShowSuggestions(true)}
               placeholder={`Enter ${criteria}`}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onBlur={() =>
+                setTimeout(() => setShowSuggestions(false), 150)
+              }
             />
 
             {showSuggestions && suggestions.length > 0 && (
@@ -412,26 +448,36 @@ const AddBook = () => {
 
         <BookGridWithLoading loading={loading}>
           {books.length > 0 &&
-            books.slice((page - 1) * pageSize, page * pageSize).map((book) => (
-              <div key={book.id}>
-                <MemoizedBookCard {...book} onClick={() => handleBookClick(book)} />
-                <ButtonWrapper>
-                  <CardButton
-                    type="button"
-                    variant="add"
-                    onClick={() => addToLib(book)}
-                  >
-                    {addedBooks[book.title] ? "Added! Click to Remove" : "Add to Library"}
-                  </CardButton>
-                </ButtonWrapper>
-              </div>
-            ))}
+            books
+              .slice((page - 1) * pageSize, page * pageSize)
+              .map((book) => (
+                <div key={book.id}>
+                  <MemoizedBookCard
+                    {...book}
+                    onClick={() => handleBookClick(book)}
+                  />
+                  <ButtonWrapper>
+                    <CardButton
+                      type="button"
+                      variant="add"
+                      onClick={() => addToLib(book)}
+                    >
+                      {addedBooks[book.title]
+                        ? "Added! Click to Remove"
+                        : "Add to Library"}
+                    </CardButton>
+                  </ButtonWrapper>
+                </div>
+              ))}
         </BookGridWithLoading>
 
         {books.length > 0 && totalPages > 1 && (
           <PagePagination>
             {page > 1 && (
-              <PaginationButton type="button" onClick={() => setPage(page - 1)}>
+              <PaginationButton
+                type="button"
+                onClick={() => setPage(page - 1)}
+              >
                 {"<"}
               </PaginationButton>
             )}
@@ -447,7 +493,10 @@ const AddBook = () => {
             ))}
 
             {page < totalPages && (
-              <PaginationButton type="button" onClick={() => setPage(page + 1)}>
+              <PaginationButton
+                type="button"
+                onClick={() => setPage(page + 1)}
+              >
                 {">"}
               </PaginationButton>
             )}
@@ -458,7 +507,9 @@ const AddBook = () => {
       <SidePanel
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
-        inLibrary={!!selectedBook && !!addedBooks[selectedBook.title]}
+        inLibrary={
+          !!selectedBook && !!addedBooks[selectedBook.title]
+        }
         onAdd={addToLib}
         onRemove={removeFromLib}
         loading={panelLoading}
