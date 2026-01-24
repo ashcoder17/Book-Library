@@ -6,9 +6,12 @@ import PageWrapper from "../components/PageWrapper";
 import BookCard from "../components/BookCard";
 import CardButton from "../components/CardButton";
 import BookGrid from "../components/BookGrid";
+import fetchBookDetails from "../components/fetchBookDetails";
 
 import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
 import withImageLoading from "../components/hoc/withImageLoading";
+
+import SidePanel from "../components/SidePanel";
 
 import { ThemeContext } from "../components/ThemeContext";
 
@@ -158,7 +161,6 @@ const Button = styled.button`
     box-shadow: 0 12px 30px rgba(255, 65, 108, 0.6);
   }
 `;
-
 const ButtonWrapper = styled.div`
   margin-top: 8px;
   display: flex;
@@ -200,6 +202,8 @@ const AddBook = () => {
   const [page, setPage] = useState(1);
   const [addedBooks, setAddedBooks] = useState({});
   const [loading, setLoading] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [panelLoading, setPanelLoading] = useState(false);
 
   useEffect(() => {
   return () => {
@@ -207,8 +211,23 @@ const AddBook = () => {
   };
 }, []);
 
+useEffect(() => {
+  const stored = JSON.parse(localStorage.getItem("books")) || {};
+  setAddedBooks(stored);
+}, []);
+
   const pageSize = 24;
   const totalPages = Math.ceil(books.length / pageSize);
+
+  const handleBookClick = async (book) => {
+  setPanelLoading(true);
+  setSelectedBook(book); // show panel immediately
+
+  const detailedBook = await fetchBookDetails(book);
+
+  setSelectedBook(detailedBook);
+  setPanelLoading(false);
+};
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -216,6 +235,7 @@ const AddBook = () => {
     setBooks([]);
     setLoading(true);
     const result = await fetchQuery("search", criteria, inputValue, sort);
+    console.log("SEARCH RESULT:", result); // Debugging line
     setShowSuggestions(false);
     setSuggestions([]);
     setBooks(result || []);
@@ -337,7 +357,7 @@ const handleLiveSearch = async (value) => {
                 {suggestions.map((book) => (
                   <SuggestionItem
                     dark={darkMode}
-                    key={book.isbn}
+                    key={book.id}
                     onClick={() => {
                       setInputValue(book.title);
                       setShowSuggestions(false);
@@ -358,8 +378,8 @@ const handleLiveSearch = async (value) => {
         <BookGridWithLoading loading={loading}>
           {books.length > 0 &&
             books.slice((page - 1) * pageSize, page * pageSize).map((book) => (
-              <div key={book.isbn}>
-                <BookCardWithImageLoading {...book} />
+              <div key={book.id}>
+                <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)}/>
                 <ButtonWrapper>
                   <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
                     {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
@@ -396,6 +416,14 @@ const handleLiveSearch = async (value) => {
           </PagePagination>
         )}
       </Container>
+      <SidePanel
+        book={selectedBook}
+        onClose={() => setSelectedBook(null)}
+        inLibrary={Boolean(localStorage.getItem("books") && JSON.parse(localStorage.getItem("books"))[selectedBook?.title])}
+        onAdd={addtoLib}
+        onRemove={()=>{}}
+      />
+
     </PageWrapper>
   );
 };

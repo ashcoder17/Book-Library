@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import Mosaic from "./Mosaic";
 import withImageLoading from "../components/hoc/withImageLoading";
@@ -19,13 +18,6 @@ const CardWrapper = styled.div`
   width: 100%;
   aspect-ratio: 2 / 3;
   position: relative;
-`;
-
-const CardLink = styled(Link)`
-  text-decoration: none;
-  width: 100%;
-  height: 100%;
-  display: block;
 `;
 
 const Card = styled.div`
@@ -160,7 +152,7 @@ const BookImageWithLoading = withImageLoading(BookImage);
 
 const particleColors = ["#ff416c", "#ff4b2b", "#ffe259", "#00c6ff", "#0072ff"];
 
-const BookCard = ({ isbn, thumbnail, title, author }) => {
+const BookCard = ({ isbn, thumbnail, title, author, onClick }) => {
   const particles = Array.from({ length: 5 }, () => ({
     size: Math.random() * 6 + 3,
     top: Math.random() * 100,
@@ -172,8 +164,7 @@ const BookCard = ({ isbn, thumbnail, title, author }) => {
 
   return (
     <CardWrapper>
-      <CardLink to={`/book/${isbn}`}>
-        <Card>
+        <Card onClick={onClick}>
           {particles.map((p, i) => (
             <Particle key={i} {...p} />
           ))}
@@ -185,7 +176,6 @@ const BookCard = ({ isbn, thumbnail, title, author }) => {
             </Overlay>
           </Mosaic>
         </Card>
-      </CardLink>
     </CardWrapper>
   );
 };

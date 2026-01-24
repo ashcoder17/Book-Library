@@ -5,6 +5,8 @@ import BookCard from "../components/BookCard";
 import BookGrid from "../components/BookGrid";
 import CardButton from "../components/CardButton";
 import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
+import SidePanel from "../components/SidePanel";
+import fetchBookDetails from "../components/fetchBookDetails";
 
 const shine = keyframes`
   0% { background-position: -200px 0; }
@@ -84,6 +86,8 @@ const MyBooks = () => {
     const [books, setBooks] = useState({});
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [selectedBook, setSelectedBook] = useState(null);
+    const [panelLoading, setPanelLoading] = useState(false);
 
     const bookList = Object.values(books);
     const pageSize = 24; 
@@ -97,6 +101,15 @@ const MyBooks = () => {
             setLoading(false);
         }, 800); 
     }, []);
+    const handleBookClick = async (book) => {
+        setPanelLoading(true);
+        setSelectedBook(book); // show panel immediately
+
+        const detailedBook = await fetchBookDetails(book);
+
+        setSelectedBook(detailedBook);
+        setPanelLoading(false);
+    };
 
     const removeLib = (title) => {
         const updatedBooks = { ...books };
@@ -118,8 +131,8 @@ const MyBooks = () => {
                             {bookList
                                 .slice((page - 1) * pageSize, page * pageSize)
                                 .map((book) => (
-                                    <div key={book.isbn}>
-                                        <BookCard {...book} />
+                                    <div key={book.id}>
+                                        <BookCard {...book} onClick={() => handleBookClick(book)}/>
                                         <RemoveWrapper>
                                             <CardButton
                                                 variant="remove"
@@ -160,6 +173,14 @@ const MyBooks = () => {
                     </>
                 )}
             </Container>
+            <SidePanel
+                book={selectedBook}
+                onClose={() => setSelectedBook(null)}
+                inLibrary={Boolean(localStorage.getItem("books") && JSON.parse(localStorage.getItem("books"))[selectedBook?.title])}
+                onAdd={()=>{}}
+                onRemove={removeLib}
+            />
+
         </PageWrapper>
     );
 };

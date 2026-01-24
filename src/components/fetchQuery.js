@@ -1,15 +1,15 @@
 import axios from 'axios'
 
 
-const bookFormat = (book) => {
+const bookFormat = (type, book) => {
     return {
         //isbn: book.volumeInfo.industryIdentifiers[0].identifier,
         id : book.key,
         title: book.title,
-        author: book.author_name ? book.author_name.join(', ') : 'Unknown Author',
+        author: type == "search" ? (book.author_name ? book.author_name.join(', ') : 'Unknown Author') : (book.authors ? book.authors.map(author => author.name).join(', ') : 'Unknown Author'),
         //publisher: book.volumeInfo.publisher || 'Unknown Publisher',
         publishDate: book.first_publish_year || 'Unknown Date',
-        //description: book.volumeInfo.description || 'No Description Available',
+        description: "No description available.",
         //categories: book.volumeInfo.categories ? book.volumeInfo.categories.join(', ') : 'Uncategorized',
         //pageCount: book.volumeInfo.pageCount || 'Unknown Page Count',
         //language: book.volumeInfo.language ? book.volumeInfo.language.toUpperCase() : 'Unknown Language',
@@ -38,7 +38,7 @@ const fetchQuery = async (type, crit, search, sort) => {
   console.log("Fetching from URL:", url); // Debugging line
   try {
     const response = await axios.get(url)
-    books = response.data.docs.map(book => bookFormat(book));
+    books = response.data.docs.map(book => bookFormat(type, book));
     console.log("books", books); //// Debugging line
     
     return books
@@ -53,7 +53,7 @@ const fetchQuery = async (type, crit, search, sort) => {
   console.log("Fetching from URL:", url); // Debugging line
   try {
     const response = await axios.get(url)
-    books = response.data.works.map(book => bookFormat(book));
+    books = response.data.works.map(book => bookFormat(type, book));
     console.log("books", books); //// Debugging line
     return books
   } catch (error) {

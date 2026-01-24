@@ -7,6 +7,9 @@ import BookGrid from "../components/BookGrid";
 import withImageLoading from "../components/hoc/withImageLoading";
 import BookCard from "../components/BookCard";
 import CardButton from "../components/CardButton";
+import SidePanel from "../components/SidePanel";
+import fetchBookDetails from "../components/fetchBookDetails";
+console.log("fetchBookDetails is:", fetchBookDetails); // Debugging line
 
 const shine = keyframes`
   0% { background-position: -200px 0; }
@@ -99,6 +102,8 @@ const AllBooks = () => {
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(false);
   const [addedBooks, setAddedBooks] = useState({});
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [panelLoading, setPanelLoading] = useState(false);
 
   const addtoLib = (book) => {
     if (addedBooks[book.title]) return;
@@ -107,6 +112,16 @@ const AllBooks = () => {
     myBooks[book.title] = book;
     localStorage.setItem("books", JSON.stringify(myBooks));
   };
+
+  const handleBookClick = async (book) => {
+  console.log("BOOK CLICKED:", book.title); // Debugging line
+  setPanelLoading(true);
+  const details = await fetchBookDetails(book);
+  console.log("DETAILS:", details);
+  setSelectedBook(details);
+  console.log("BOOK fetched:", book.title); // Debugging line
+  setPanelLoading(false);
+};
 
   const handleCategoryClick = async (category) => {
   setSelectedCategory(category);
@@ -133,6 +148,11 @@ const AllBooks = () => {
     ));
     return <BookCard {...props} ImageComponent={ImageWithLoading} />;
   };
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("books")) || {};
+    setAddedBooks(stored);
+  }, []);
 
   useEffect(() => {
     const fetchCategories = () => {
@@ -184,10 +204,10 @@ const AllBooks = () => {
                 <BookGridWithLoading loading={loading}>
                       {books.length > 0 &&
                         books.map((book) => (
-                        <div key={book.isbn}>
-                <BookCardWithImageLoading {...book} />
+                        <div key={book.id}>
+                <BookCardWithImageLoading {...book} onClick={() => handleBookClick(book)}/>
                 <ButtonWrapper>
-                  <CardButton type="button" variant="add" onClick={() => addtoLib(book)}>
+                  <CardButton type="button" variant="add" onClick={(e) => {e.stopPropagation(); addtoLib(book);}}>
                     {addedBooks[book.title] ? "Added! Enjoy Reading!" : "Add to Library"}
                   </CardButton>
                 </ButtonWrapper>
@@ -198,6 +218,14 @@ const AllBooks = () => {
             </>
           )}  
       </Container>
+      <SidePanel
+        book={selectedBook}
+        onClose={() => setSelectedBook(null)}
+        inLibrary={!!addedBooks[selectedBook?.title]}
+        onAdd={addtoLib}
+        onRemove={()=>{}}
+      />
+
     </PageWrapper>
   );
 };
