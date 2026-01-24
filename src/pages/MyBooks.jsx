@@ -128,7 +128,6 @@ const MyBooks = () => {
         localStorage.setItem("books", JSON.stringify(myBooks));
     };
 
-    // Wrap BookCard with image loading HOC
     const BookCardWithImageLoading = (props) => {
         const ImageWithLoading = withImageLoading(({ src, alt }) => (
             <img src={src} alt={alt} style={{ width: "100%", height: "auto" }} />

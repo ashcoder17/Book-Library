@@ -12,7 +12,7 @@ import withLoadingAnimation from "../components/hoc/withLoadingAnimation";
 import SidePanel from "../components/SidePanel";
 import { ThemeContext } from "../components/ThemeContext";
 
-// ====== Styles ======
+
 const shine = keyframes`
   0% { background-position: -200px 0; }
   100% { background-position: 200px 0; }
@@ -185,7 +185,6 @@ const PaginationButton = styled(Button)`
   }
 `;
 
-// ====== HOC: Image Loading with Cache ======
 const withImageLoading = (Component) => ({ src, alt, ...props }) => {
   const [loaded, setLoaded] = useState(false);
   const cache = useRef({});
@@ -207,7 +206,6 @@ const withImageLoading = (Component) => ({ src, alt, ...props }) => {
   return loaded ? <Component src={src} alt={alt} {...props} /> : <div style={{ width: "100%", height: "200px", background: "#eee" }} />;
 };
 
-// ====== AddBook Component ======
 const AddBook = () => {
   const { darkMode } = useContext(ThemeContext);
 
@@ -338,8 +336,6 @@ const AddBook = () => {
     setSort(newSort);
     setSortDropDownOpen(false);
   };
-
-  // ====== Render ======
   const BookGridWithLoading = withLoadingAnimation(BookGrid);
 
   return (
@@ -348,7 +344,6 @@ const AddBook = () => {
         <Heading>Discover Your Next Favorite Book</Heading>
 
         <SearchWrapper onSubmit={handleSearch}>
-          {/* Search By Dropdown */}
           <DropDownWrapper>
             <DropDownButton type="button" onClick={toggleSearchDropDown}>
               Search By: {criteria}
@@ -362,7 +357,6 @@ const AddBook = () => {
             </DropDownContent>
           </DropDownWrapper>
 
-          {/* Sort Dropdown */}
           <DropDownWrapper>
             <DropDownButton type="button" onClick={toggleSortDropDown}>
               Sort By: {sort}
@@ -376,7 +370,6 @@ const AddBook = () => {
             </DropDownContent>
           </DropDownWrapper>
 
-          {/* Search Input */}
           <InputWrapper>
             <Input
               type="text"
@@ -417,7 +410,6 @@ const AddBook = () => {
           <Button type="submit">Search</Button>
         </SearchWrapper>
 
-        {/* Book Grid */}
         <BookGridWithLoading loading={loading}>
           {books.length > 0 &&
             books.slice((page - 1) * pageSize, page * pageSize).map((book) => (
@@ -436,7 +428,6 @@ const AddBook = () => {
             ))}
         </BookGridWithLoading>
 
-        {/* Pagination */}
         {books.length > 0 && totalPages > 1 && (
           <PagePagination>
             {page > 1 && (
@@ -464,7 +455,6 @@ const AddBook = () => {
         )}
       </Container>
 
-      {/* Side Panel */}
       <SidePanel
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
